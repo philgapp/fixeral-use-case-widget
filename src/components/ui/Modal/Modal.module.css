@@ -1,0 +1,13 @@
+.root {
+    @apply fixed font-sans flex items-center inset-0 z-50 justify-center;
+
+    background-color: rgba(0, 0, 0, 0.35);
+}
+
+.modal {
+    @apply max-w-screen-lg mt-20 sm:mt-0 sm:h-4/5 sm:mx-10 h-full w-full bg-primary text-primary relative;
+}
+
+.modal:focus {
+    @apply outline-none;
+}

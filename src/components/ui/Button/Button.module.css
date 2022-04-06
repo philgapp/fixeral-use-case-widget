@@ -1,0 +1,32 @@
+.root {
+    @apply border-solid border-gray-300 cursor-pointer inline-flex px-4 py-2 rounded-sm leading-6  transition ease-in-out duration-150 shadow-sm text-center justify-center border items-center;
+}
+
+.root:hover {
+    @apply border border-accent text-accent;
+}
+
+.root:focus {
+    @apply shadow outline-none;
+}
+
+.primary {
+    @apply bg-accent text-secondary border-accent;
+}
+
+.primary:hover {
+    @apply border-accent-hover text-secondary bg-accent-hover;
+}
+
+.rounded {
+    @apply rounded-3xl w-full uppercase px-8 py-4 font-black text-xs tracking-widest;
+}
+
+.active {
+    @apply border-gray-600 text-gray-900;
+}
+
+.disabled,
+.disabled:hover {
+    @apply opacity-40;
+}

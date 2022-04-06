@@ -1,0 +1,35 @@
+.wrapper {
+    @apply overflow-visible;
+}
+
+.root {
+    @apply bg-transparent my-1 py-3 px-4 w-full appearance-none transition duration-150 ease-in-out border rounded-sm text-primary;
+}
+
+.root:hover {
+    @apply border border-accent border-opacity-90;
+}
+
+.root:focus {
+    @apply outline-none ring-2 ring-accent border border-accent border-opacity-90;
+}
+
+.inputWrapper {
+    @apply relative;
+}
+
+.label {
+    @apply text-xs text-decent;
+}
+
+.icon {
+    @apply absolute flex items-center right-2 top-0 bottom-0;
+}
+
+.error {
+    @apply text-danger text-xs;
+}
+
+.success {
+    @apply text-green-600 text-xs;
+}

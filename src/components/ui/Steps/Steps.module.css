@@ -1,0 +1,81 @@
+.root {
+    @apply outline-none space-y-4;
+
+    & :global(.cls-item-container) {
+        @apply outline-none clear-both relative;
+    }
+
+    & :global(.cls-item-icon) {
+        @apply w-8 h-8 leading-8 float-left mr-4;
+    }
+
+    & :global(.cls-icon) {
+        @apply flex w-8 h-8 justify-center items-center rounded-full border border-secondary transition duration-300 ease-in-out;
+    }
+
+    & :global(.cls-item-content) {
+        @apply overflow-hidden px-2;
+    }
+
+    & :global(.cls-item-description) {
+        @apply py-2;
+    }
+
+    & :global(.cls-item-title) {
+        @apply leading-8 transition duration-300 ease-in-out;
+    }
+
+    & :global(.cls-item-finish) {
+        & :global(.cls-icon) {
+            @apply text-accent border-accent;
+        }
+
+        &:hover {
+            & :global(.cls-item-title) {
+                @apply text-accent;
+            }
+        }
+    }
+
+    & :global(.cls-item-wait) {
+        &:hover {
+            & :global(.cls-item-title) {
+                @apply text-accent;
+            }
+
+            & :global(.cls-icon) {
+                @apply text-accent border-accent;
+            }
+        }
+    }
+
+    & :global(.cls-item-disabled) {
+        @apply opacity-40;
+
+        &:hover {
+            & :global(.cls-item-title) {
+                @apply text-primary;
+            }
+
+            & :global(.cls-icon) {
+                @apply text-primary border-secondary;
+            }
+        }
+    }
+
+    & :global(.cls-item-active) {
+        & :global(.cls-icon) {
+            @apply text-secondary bg-accent border-none;
+        }
+    }
+
+    & :global(.cls-item-tail) {
+        @apply absolute top-0 left-4 w-0.5 h-full pt-12;
+
+        &::after {
+            @apply h-full border-r bg-secondary inline-block ;
+
+            content: "";
+        }
+    }
+}

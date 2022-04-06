@@ -1,0 +1,307 @@
+openapi: 3.0.0
+info:
+  description: Eatgrim Shipping API
+  version: "1.0.0"
+  title: Eatgrim Shipping API
+  contact:
+    email: tech@soundsgood.com
+tags:
+  - name: public
+    description: Exposed endpoints accasible for everyone.
+paths:
+  /delivery/type:
+    post:
+      description: >
+        Returns the list of available delivery types for specified
+        **country** and  **shopify product**.
+      tags:
+        - public
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TypePayload'
+      responses:
+        '200':
+          description: delivery types
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DeliveryType'
+                example: [{
+                  "type": "doorstep",
+                  "available": true,
+                  "minPrice": 40,
+                  "maxPrice": 40
+                }, {
+                  "type": "pickup",
+                  "available": true,
+                  "minPrice": 0,
+                  "maxPrice": 20
+                }]
+        '400':
+          description: 'invalid input, object invalid'
+  /delivery/pickup:
+    post:
+      tags:
+        - public
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PickupPayload'
+      responses:
+        '200':
+          description: pickup locations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PickupLocation'
+        '400':
+          description: 'invalid input, object invalid'
+  /delivery/doorstep:
+    post:
+      tags:
+      - public
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DoorstepPayload'
+      responses:
+        '200':
+          description: doorstep delivery services
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DoorstepDeliveryLocation'
+        '400':
+          description: 'invalid input, object invalid'
+components:
+  schemas:
+    Address:
+      type: object
+      required:
+        - address1
+        - city
+        - country
+      properties:
+        firstName:
+          type: string
+          example: 'Elon'
+        lastName:
+          type: string
+          example: 'Mask'
+        address1:
+          type: string
+          example: '123 Main st'
+        address2:
+          type: string
+        company:
+          type: string
+          example: 'Tesla'
+        city:
+          type: string
+          example: 'Anytown'
+        zipCode:
+          type: string
+          example: '4444'
+        country:
+          type: string
+          example: 'United States'
+        phone:
+          type: string
+    Country:
+      type: string
+      enum:
+        - DK
+    Coordinates:
+      type: object
+      required:
+        - lat
+        - lng
+      properties:
+        lat:
+          type: string
+          example: '55.344051'
+        lng:
+          type: string
+          example: '10.348045'
+    Day:
+      type: string
+      enum:
+        - Monday
+        - Tuesday
+        - Wednesday
+        - Thursday
+        - Friday
+        - Saturday
+        - Sunday
+    Price:
+      type: number
+      format: float
+      multipleOf: 0.01
+      minimum: 0
+    ShopifyProductId:
+      type: string
+      description: Shopify product id
+      example: 1355435835494
+    ShopifyVariantId:
+      type: string
+      description: Shopify variant id
+      example: 1355435835494
+    TimeRange:
+      type: object
+      required:
+        - startTime
+        - endTime
+      properties:
+        startTime:
+          type: string
+          example: "16:00"
+          pattern: "^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$"
+        endTime:
+          type: string
+          example: "18:00"
+          pattern: "^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$"
+    TimeEntry:
+      allOf:
+        - $ref: '#/components/schemas/TimeRange'
+        - type: object
+          required:
+            - id
+            - available
+            - variantId
+          properties:
+            id:
+              type: integer
+            available:
+              type: boolean
+              description: Availability of the time entry
+            description:
+              type: string
+            variantId:
+              $ref: '#/components/schemas/ShopifyVariantId'
+    PayloadBase:
+      type: object
+      required:
+        - country
+        - shopifyProductId
+      properties:
+        country:
+          $ref: '#/components/schemas/Country'
+        shopifyProductId:
+          $ref: '#/components/schemas/ShopifyProductId'
+    PickupPayload:
+      allOf:
+        - $ref: '#/components/schemas/PayloadBase'
+        - type: object
+          properties:
+            id:
+              type: integer
+            currentPosition:
+              allOf:
+                - $ref:  '#/components/schemas/Coordinates'
+                - description: If specified the pickup locations will be sorted starting from the nearest to farthest
+    DoorstepPayload:
+      allOf:
+        - $ref: '#/components/schemas/PayloadBase'
+        - type: object
+          properties:
+            timeEntryId:
+              type: integer
+            zipCode:
+              type: string
+              example: 4444
+    TypePayload:
+      allOf:
+        - $ref: '#/components/schemas/PayloadBase'
+    DeliveryType:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - doorstep
+            - pickup
+        available:
+          type: boolean
+        minPrice:
+          $ref: '#/components/schemas/Price'
+        maxPrice:
+          $ref: '#/components/schemas/Price'
+    DaySlot:
+      type: object
+      required:
+        - day
+        - timeEntries
+      properties:
+        day:
+          $ref: '#/components/schemas/Day'
+        timeEntries:
+          type: array
+          items:
+            $ref: '#/components/schemas/TimeRange'
+    DateSlot:
+      type: object
+      required:
+        - timeEntries
+      properties:
+        date:
+          type: string
+          format: date
+        timeEntries:
+          type: array
+          items:
+            $ref: '#/components/schemas/TimeEntry'
+    LocationBase:
+      type: object
+      required:
+        - id
+        - price
+        - slots
+      properties:
+        id:
+          type: integer
+        price:
+          $ref: '#/components/schemas/Price'
+        slots:
+          type: array
+          items:
+            $ref: '#/components/schemas/DateSlot'
+    PickupLocation:
+      allOf:
+        - $ref: '#/components/schemas/LocationBase'
+        - type: object
+          required:
+            - name
+            - address
+            - coordinates
+          properties:
+            name:
+              type: string
+              example: 'Nordwest'
+            address:
+              $ref: '#/components/schemas/Address'
+            coordinates:
+              $ref: '#/components/schemas/Coordinates'
+            openingHours:
+              type: array
+              items:
+                $ref: '#/components/schemas/DaySlot'
+    DoorstepDeliveryLocation:
+      allOf:
+        - $ref: '#/components/schemas/LocationBase'
+        - type: object
+          required:
+            - zipCode
+          properties:
+            zipCode:
+              type: string
+              example: 4444

@@ -1,0 +1,5 @@
+.list {
+    height: calc(50vh - theme('spacing.10'));
+
+    @apply overflow-auto sm:h-full sm:w-1/3;
+}

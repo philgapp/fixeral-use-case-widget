@@ -1,0 +1,16 @@
+<div id="delivery-widget-container-{{ subscription.shopify_product_id }}"></div>
+<script>
+    deliveryApp.render({
+        containerId: "delivery-widget-container-{{ subscription.shopify_product_id }}",
+        shopifyProductId: "{{ subscription.shopify_product_id }}",
+        recharge: {
+            customerToken: window.customerToken,
+            customerHash: {{ customer.hash | json }},
+            address: {{ subscription.address | json }},
+            addressId: {{ subscription.address.id | json }},
+            subscriptionId: {{ subscription.shopify_product_id | json }},
+            nextChargeScheduledAt: {{ subscription.next_charge_scheduled_at | json }},
+            properties: {{ subscription.properties | json }},
+        },
+    });
+</script>

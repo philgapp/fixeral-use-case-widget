@@ -1,0 +1,17 @@
+{% if product.has_only_default_variant %}
+  <input name="id" value="{{ variant.id }}" type="hidden">
+{% else %}
+  <select name="id" id="delivery-widget-variants-{{ product.id }}" style="display: none;">
+    {% for variant in product.variants %}
+      <option value="{{ variant.id }}">{{ variant.title }}</option>
+    {% endfor%}
+  </select>
+{% endif %}
+<div id="delivery-widget-container-{{ product.id }}"></div>
+<script>
+    deliveryApp.render({
+        containerId: "delivery-widget-container-{{ product.id }}",
+        shopifyProductId: "{{ product.id | json }}",
+        variantSelectorId: "ProductSelect-{{ section.id }}",
+    });
+</script>

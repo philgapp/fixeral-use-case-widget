@@ -1,0 +1,13 @@
+<script src="{{ 'deliveryApp.js' | asset_url }}"></script>
+<link rel="stylesheet" href="{{ 'deliveryApp.css' | asset_url }}" />
+
+<script type="text/javascript">
+    window.deliveryAppConfig = {
+        country: "DK",
+        apiBasePath: "https://deliveryapi.eatgrim.com",
+        googleMapsApiKey: "AIzaSyCfulJlnFQKg34hfSp3LVbGOTiwklb2wC0",
+        subscribeApi: {
+            apiBasePath: "https://restrict-by-zipcode.herokuapp.com"
+        }
+    };
+</script>

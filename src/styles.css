@@ -1,0 +1,59 @@
+:root {
+    /* Accent */
+    --accent-color: #000;
+    --accent-hover-color: #555;
+    --accent-ring-color: #ddd;
+
+    /* Background colors */
+    --bg-primary: #fff;
+    --bg-secondary: #000;
+    --bg-decent: rgb(247, 247, 247);
+    --bg-accent: var(--accent-color);
+    --bg-accent-hover: var(--accent-hover-color);
+    --bg-active: rgb(244, 244, 244);
+
+    /* Text colors */
+    --text-primary: #000;
+    --text-secondary: #fff;
+    --text-decent: #777;
+    --text-accent: var(--accent-color);
+    --text-danger: red;
+
+    /* Border colors */
+    --border-default: #cbcbcb;
+    --border-secondary: #999;
+    --border-accent: var(--accent-color);
+    --border-accent-hover: var(--accent-hover-color);
+
+    /* Ring colors */
+    --ring-accent: var(--accent-ring-color);
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Athari custom styles */
+
+.cls-item-title, .cls-icon {
+    font-family: Rubik, sans-serif;
+    font-weight: 500;
+    font-size: 18px;
+}
+
+.cls-item-title::after {
+    content: ' ';
+    display: block;
+    border: 2px solid #FCBD03;
+}
+
+.cls-item button  {
+    border-radius: 50px;
+    font-family: Roboto, sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.button-no-round {
+    border-radius: 0px !important;
+}
