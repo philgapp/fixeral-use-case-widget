@@ -36,7 +36,6 @@
 /* Athari custom styles */
 
 .cls-item-title, .cls-icon {
-    font-family: Rubik, sans-serif;
     font-weight: 500;
     font-size: 18px;
 }
@@ -44,16 +43,23 @@
 .cls-item-title::after {
     content: ' ';
     display: block;
-    border: 2px solid #FCBD03;
+    border: 2px solid #F5793B;
 }
 
 .cls-item button  {
     border-radius: 50px;
-    font-family: Roboto, sans-serif;
     font-size: 16px;
     font-weight: 700;
 }
 
 .button-no-round {
     border-radius: 0px !important;
+}
+
+input {
+    width: 80% !important;
+}
+
+.space-y-4.step2 label {
+    font-size: larger !important;
 }

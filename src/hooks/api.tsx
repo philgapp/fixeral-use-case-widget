@@ -17,7 +17,8 @@ import {
 } from "@schema/types";
 
 import { initializeApp } from "firebase/app";
-import { getStorage, ref, listAll, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+import { getStorage, ref, listAll, uploadBytesResumable, getDownloadURL, getMetadata } from "firebase/storage";
+import { getDatabase, ref as dbRef, set as dbSet, update as dbUpdate, child, get } from "firebase/database";
 
 
 interface Coords {
@@ -65,15 +66,19 @@ export const useFirebase = () => {
     const firebaseConfig = {
         apiKey: '<your-api-key>',
         authDomain: '<your-auth-domain>',
-        databaseURL: '<your-database-url>',
-        storageBucket: 'fixeral-pilot.appspot.com'
+        storageBucket: 'fixeral-pilot.appspot.com',
+        databaseURL: "https://fixeral-pilot-default-rtdb.europe-west1.firebasedatabase.app/",
+        projectId: "PROJECT_ID",
+        messagingSenderId: "FIXERAL",
+        appId: "FIXERAL_USE_CASE_PILOT",
+        // For Firebase JavaScript SDK v7.20.0 and later, `measurementId` is an optional field
+        measurementId: "G-MEASUREMENT_ID",
     };
     const firebaseApp = initializeApp(firebaseConfig);
 
-// Get a reference to the storage service, which is used to create references in your storage bucket
     const storage = getStorage(firebaseApp);
     const partModels = ref(storage, 'partModels');
-    return { partModels, ref, listAll, uploadBytesResumable, getDownloadURL }
+    return { partModels, ref, listAll, uploadBytesResumable, getMetadata, getDownloadURL, getDatabase, dbRef, dbSet, dbUpdate, child, get }
 }
 
 export const useFakeTypes = () => {

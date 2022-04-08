@@ -121,7 +121,15 @@ for (const [key, value] of Object.entries(DELIVERY_TYPE_LABELS)) {
     DELIVERY_TYPE_STR_TO_ENUM[value.toLowerCase()] = key as DeliveryType;
 }
 
+export type NewUseCase = boolean | null;
+
+export type UseCase = string | null;
+
+export type UploadProgress = string | null;
+
 export type Contact = {
+    caseid: string,
+    id: string,
     firstname: string,
     lastname: string,
     company: string,
@@ -160,6 +168,9 @@ export type Size = string;
 export type pilotId = string;
 
 export interface Store {
+    newUseCase: NewUseCase | null;
+    uploadProgress: UploadProgress | null;
+    useCase: UseCase | null;
     contact: Contact | null;
     availableDeliveryTypes: AvailableDeliveryType[];
     type: DeliveryType | null;

@@ -1,7 +1,8 @@
 import { ApiProvider } from "@context/api";
 import { UIProvider, useUI } from "@context/ui";
-import { StoreProvider } from "@context/store";
+import { StoreProvider, useStore } from "@context/store";
 import { Form } from "@components/form";
+import { Dashboard } from "@components/dashboard";
 import { AddToCart } from "@components/add-to-cart";
 //import { Recharge } from "./recharge";
 import { useConfig } from "@context/config";
@@ -13,12 +14,18 @@ import {
     SHIPPING_TYPE
     } from "@constants/index";
 import { AvailableDateSlot, DeliveryType, Store } from "@schema/types";
+//import { useNewUseCase } from "@hooks/state";
 
 const UseCaseApp: FC = () => {
+    const { newUseCase } = useStore()
+
     return (
-        <StoreProvider>
-            <Form />
-        </StoreProvider>
+        <>
+            { newUseCase
+                ? <Form/>
+                : <Dashboard/>
+            }
+        </>
     );
 };
 /*
@@ -197,17 +204,15 @@ const RechargeApp: FC = () => {
  */
 
 const App: FC = (props) => {
-    const { pilotId } = useConfig();
 
     return (
         <ApiProvider>
             <UIProvider>
-                <div className="font-sans text-base">
-                    { pilotId &&
-                    <h3>Pilot ID = { pilotId }</h3>
-                    }
-                    <UseCaseApp {...props} />
-                </div>
+                <StoreProvider>
+                    <div className="font-sans text-base">
+                        <UseCaseApp {...props} />
+                    </div>
+                </StoreProvider>
             </UIProvider>
         </ApiProvider>
     );

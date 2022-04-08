@@ -1,5 +1,8 @@
 import React, { FC, useMemo } from "react";
 import {
+    NewUseCase,
+    UploadProgress,
+    UseCase,
     Contact,
     AvailableDeliveryType,
     DeliveryType,
@@ -11,6 +14,9 @@ import {
 } from "@schema/types";
 
 const initialStore: Store & Actions = {
+    newUseCase: null,
+    uploadProgress: null,
+    useCase: null,
     contact: null,
     availableDeliveryTypes: [],
     type: null,
@@ -18,6 +24,9 @@ const initialStore: Store & Actions = {
     timeEntry: null,
     size: null,
     reset: () => {},
+    setNewUseCase: (newUseCase: NewUseCase) => {},
+    setUploadProgress: (uploadProgress: UploadProgress) => {},
+    setUseCase: (useCase: UseCase) => {},
     setContact: (contact: Contact) => {},
     setTimeEntry: (timeEntry: TimeEntry) => {},
     setLocation: (location: Location) => {},
@@ -28,6 +37,18 @@ const initialStore: Store & Actions = {
 };
 
 type Action =
+    | {
+        type: "SET_NEW_USE_CASE";
+        newUseCase: NewUseCase;
+    }
+    | {
+        type: "SET_UPLOAD_PROGRESS";
+        uploadProgress: UploadProgress;
+    }
+    | {
+        type: "SET_USE_CASE";
+        useCase: UseCase;
+    }
     | {
         type: "SET_CONTACT";
         contact: Contact;
@@ -61,6 +82,9 @@ type Action =
       };
 
 interface Actions {
+    setNewUseCase: (newUseCase: NewUseCase) => void;
+    setUploadProgress: (uploadProgress: UploadProgress) => void;
+    setUseCase: (useCase: UseCase) => void;
     setContact: (contact: Contact) => void;
     setTimeEntry: (timeEntry: TimeEntry) => void;
     setLocation: (location: Location) => void;
@@ -79,10 +103,29 @@ StoreContext.displayName = "StoreContext";
 
 function storeReducer(store: Store, action: Action): Store {
     switch (action.type) {
+        case "SET_NEW_USE_CASE": {
+            return {
+                ...store,
+                newUseCase: action.newUseCase,
+            };
+        }
+        case "SET_UPLOAD_PROGRESS": {
+            return {
+                ...store,
+                uploadProgress: action.uploadProgress,
+            };
+        }
+        case "SET_USE_CASE": {
+            return {
+                ...store,
+                useCase: action.useCase,
+            };
+        }
         case "SET_CONTACT": {
             return {
                 ...store,
-                contact: action.contact,            };
+                contact: action.contact,
+            };
         }
         case "SET_AVAILABLE_DELIVERY_TYPES": {
             return {
@@ -142,6 +185,24 @@ export const StoreProvider: FC<{ initial?: Partial<Store> }> = ({
         ...initial,
     });
 
+    const setNewUseCase = (newUseCase: NewUseCase) =>
+        dispatch({
+            type: "SET_NEW_USE_CASE",
+            newUseCase,
+        });
+
+    const setUploadProgress = (uploadProgress: UploadProgress) =>
+        dispatch({
+            type: "SET_UPLOAD_PROGRESS",
+            uploadProgress,
+        });
+
+    const setUseCase = (useCase: UseCase) =>
+        dispatch({
+            type: "SET_USE_CASE",
+            useCase,
+        });
+
     const setContact = (contact: Contact) =>
         dispatch({
             type: "SET_CONTACT",
@@ -194,6 +255,9 @@ export const StoreProvider: FC<{ initial?: Partial<Store> }> = ({
     const value = useMemo(
         () => ({
             ...store,
+            setNewUseCase,
+            setUploadProgress,
+            setUseCase,
             setContact,
             setAvailableDeliveryTypes,
             setDeliveryType,

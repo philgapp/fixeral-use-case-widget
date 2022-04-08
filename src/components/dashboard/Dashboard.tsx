@@ -1,25 +1,58 @@
 import {FC, useCallback, useEffect, useState} from "react";
 import {
-    DeliveryType,
-    PickupLocation,
-    DoorstepDeliveryLocation, Contact, UseCase,
+    Contact, UseCase,
 } from "@schema/types";
 import { useUI } from "@context/ui";
-import TimeEntryPicker from "../TimeEntryPicker";
-import HavingTroubles from "./HavingTroubles";
 import { Button, ErrorBox, Modal, Steps, Input } from "@components/ui";
 import { formatDate, formatPriceRange } from "@utils/index";
 import { useFakeTypes, useFirebase } from "@hooks/api";
+//import { useNewUseCase } from "@hooks/state"
 import { Check, Pencil } from "@components/icons";
 import { useStore } from "@context/store";
-import { DELIVERY_TYPE_LABELS } from "@constants/index";
-import {forEach} from "@react-google-maps/api/dist/utils/foreach";
+import { useNewUseCase } from "@hooks/state";
+const { getDatabase, dbRef, child, get } = useFirebase()
+
+const db = dbRef(getDatabase());
+let caseData: any
+
+    get(child(db, `cases`)).then((snapshot) => {
+        if (snapshot.exists()) {
+            console.log(snapshot.val());
+            caseData = snapshot.val()
+        } else {
+            console.log("No data available");
+        }
+    }).catch((error) => {
+        console.error(error);
+    });
 
 interface Props {
     initialized?: boolean;
 }
 
-const { Step } = Steps;
+const checkUseCase = ( e:any, setUseCase:any ) => {
+    const useCase = e.target.value
+    let filteredCases = {}
+
+    if(caseData) {
+        filteredCases = Object.fromEntries(
+            Object.entries(caseData).filter(([key, value]) => key === useCase) )
+    }
+    if(filteredCases // 👈 null and undefined check
+        && Object.keys(filteredCases).length > 0
+        && Object.getPrototypeOf(filteredCases) === Object.prototype) {
+        //console.log(filteredCases)
+    }
+    // Get list of useCases from DB
+    // Filter against supplied value
+    // Return status for UI
+    // @ts-ignore
+    if(filteredCases[useCase]) {
+        // @ts-ignore
+        console.log(filteredCases[useCase].owner)
+        setUseCase(useCase)
+    }
+}
 
 const Step1: FC = () => {
     const { contact, setContact, setUseCase } = useStore();
@@ -61,7 +94,6 @@ const Step1: FC = () => {
             title: title,
             email: email
         }
-        console.log(contact)
         setContact(contact);
         setUseCase(caseid)
         if(contact.email) firebaseContact(contact)
@@ -249,15 +281,6 @@ const Step2: FC<Props> = ({ initialized }) => {
     );
 };
 
-const Step3: FC = () => {
-    const { location } = useStore();
-
-    if (location && "slots" in location) {
-        return <TimeEntryPicker slots={location.slots} />;
-    }
-    return <></>;
-};
-
 const STEPS = [
     {
         defaultTitle: "Use Case and Owner",
@@ -267,22 +290,21 @@ const STEPS = [
         defaultTitle: "Requirements",
         Content: Step2,
     },
-    {
-        defaultTitle: "All Done!",
-        Content: Step3,
-    },
 ];
 
-const Form: FC<Props> = ({ initialized }) => {
+// @ts-ignore
+const Dashboard: FC<Props> = ({ initialized }) => {
     const { currentStep, setStep } = useUI();
-    const { setNewUseCase } = useStore()
 
     const {
         contact,
+        useCase,
         timeEntry,
         location,
         type,
         reset,
+        setNewUseCase,
+        setUseCase
     } = useStore();
 
     const { loading, error } = useFakeTypes();
@@ -297,44 +319,7 @@ const Form: FC<Props> = ({ initialized }) => {
         return `${formatDate(date)} (${startTime}-${endTime})`;
     };
 
-    const getDefaultTitle = () => {
-        if (type === DeliveryType.Pickup) {
-            const {
-                name,
-                address: { address1, city, country },
-            } = location as PickupLocation;
-
-            return (
-                <>
-                    <strong>{`Pickup - ${name} - ${address1}, ${city}, ${country}`}</strong>
-                    <p className="text-sm">{getFormattedDate()}</p>
-                </>
-            );
-        }
-        const { zipCode } = location as DoorstepDeliveryLocation;
-
-        return (
-            <>
-                <strong>{`Postal code - ${zipCode}`}</strong>
-                <p className="text-sm">{getFormattedDate()}</p>
-            </>
-        );
-    };
-
     const getTitle = (step: number, defaultTitle: string): string => {
-        const stepsFinished = disabledFrom();
-
-        switch (step) {
-            case 0:
-                if (stepsFinished > 0 && type) {
-                    return DELIVERY_TYPE_LABELS[type];
-                }
-                break;
-            case 2:
-                if (stepsFinished > 2) {
-                    return getFormattedDate();
-                }
-        }
         return defaultTitle;
     };
 
@@ -347,19 +332,6 @@ const Form: FC<Props> = ({ initialized }) => {
         }
     };
 
-    const disabledFrom = useCallback(() => {
-        if (timeEntry) {
-            return 3;
-        }
-        if (location) {
-            return 2;
-        }
-        if (contact !== null) {
-            return 1;
-        }
-        return 0;
-    }, [contact]);
-
     if (error) {
         return <ErrorBox />;
     }
@@ -371,7 +343,6 @@ const Form: FC<Props> = ({ initialized }) => {
                     <Check />
                 </div>
                 <div>
-                    {getDefaultTitle()}
                     <Button
                         className="absolute bg-primary right-2 top-0 rounded-full p-2"
                         onClick={handleEdit}
@@ -385,60 +356,17 @@ const Form: FC<Props> = ({ initialized }) => {
 
     return (
         <>
-            <Button onClick={() => setNewUseCase(false)} >Back</Button>
-            {loading ? (
-                <div className="w-full h-full py-5 space-y-4 opacity-40">
-                    <div className="animate-pulse flex space-x-6">
-                        <div className="rounded-full bg-decent h-8 w-8"></div>
-                        <div className="flex-1 space-y-4 py-2">
-                            <div className="h-4 bg-decent rounded w-40"></div>
-                            <div className="h-8 bg-decent rounded w-60"></div>
-                        </div>
-                    </div>
-                    <div className="animate-pulse flex space-x-6">
-                        <div className="rounded-full bg-decent h-8 w-8"></div>
-                        <div className="flex-1 space-y-4 py-2">
-                            <div className="h-4 bg-decent rounded w-40"></div>
-                        </div>
-                    </div>
-                    <div className="animate-pulse flex space-x-6">
-                        <div className="rounded-full bg-decent h-8 w-8"></div>
-                        <div className="flex-1 space-y-4 py-2">
-                            <div className="h-4 bg-decent rounded w-40"></div>
-                        </div>
-                    </div>
-                </div>
-            ) : (
-                <Steps
-                    className="my-5"
-                    current={currentStep}
-                    direction="vertical"
-                    onChange={(index) => {
-                        if (disabledFrom() < index) {
-                            return;
-                        }
-                        setStep(index);
-                    }}
-                >
-                    {STEPS.map(({ defaultTitle, Content }, index) => {
-                        const disabled = disabledFrom() < index;
-
-                        return (
-                            <Step
-                                key={`step-${index}`}
-                                title={getTitle(index, defaultTitle)}
-                                description={
-                                    currentStep === index && (
-                                        <Content initialized={initialized} />
-                                    )
-                                }
-                            ></Step>
-                        );
-                    })}
-                </Steps>
+            <Button onClick={() => setNewUseCase(true)} >Create New Use Case</Button>
+            <br/>
+            or
+            <br/>
+            <Input type="text" placeholder="Enter Use Case Name/ID" onChange={(e, setUseCase) => checkUseCase}/>
+            {useCase && (
+                <p>{useCase}
+                </p>
             )}
         </>
     );
 };
 
-export default Form;
+export default Dashboard;
