@@ -52,6 +52,33 @@ export interface DeliveryTypePostRequest {
  */
 export class PublicApi extends runtime.BaseAPI {
 
+    // Testing Firebase API function in this context....
+    /*
+    async useCaseListenerRaw(requestParameters: any): Promise<any> {
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        const response = await this.request({
+            path: `/cases/`,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+            body: requestParameters,
+        });
+
+        return response;
+    }
+
+    async useCaseListener(requestParameters?: any): Promise<any> {
+        const response = await this.deliveryDoorstepPostRaw(requestParameters);
+        return await response.value();
+    }
+
+     */
+
     /**
      */
     async deliveryDoorstepPostRaw(requestParameters: DeliveryDoorstepPostRequest): Promise<runtime.ApiResponse<Array<DoorstepDeliveryLocation>>> {

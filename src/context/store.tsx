@@ -14,6 +14,7 @@ import {
 } from "@schema/types";
 
 const initialStore: Store & Actions = {
+    allUseCases: null,
     newUseCase: null,
     uploadProgress: null,
     useCase: null,

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useApi } from "@context/api";
 import { useConfig } from "@context/config";
 import { useLazyFetch } from "./";
@@ -12,14 +12,12 @@ import {
     AvailableDateSlot,
     AvailableDoorstepDeliveryLocation,
     AvailableLocation,
-    AvailablePickupLocation,
-    Size,
+    AvailablePickupLocation, Contact,
+    Size, UseCase,
 } from "@schema/types";
-
 import { initializeApp } from "firebase/app";
 import { getStorage, ref, listAll, uploadBytesResumable, getDownloadURL, getMetadata } from "firebase/storage";
-import { getDatabase, ref as dbRef, set as dbSet, update as dbUpdate, child, get } from "firebase/database";
-
+import { getDatabase, ref as dbRef, set as dbSet, update as dbUpdate, child, get, onValue, push } from "firebase/database";
 
 interface Coords {
     latitude?: string;
@@ -77,8 +75,129 @@ export const useFirebase = () => {
     const firebaseApp = initializeApp(firebaseConfig);
 
     const storage = getStorage(firebaseApp);
-    const partModels = ref(storage, 'partModels');
-    return { partModels, ref, listAll, uploadBytesResumable, getMetadata, getDownloadURL, getDatabase, dbRef, dbSet, dbUpdate, child, get }
+    const useCaseFiles = ref(storage, 'files');
+    return {
+        useCaseFiles,
+        ref,
+        listAll,
+        uploadBytesResumable,
+        getMetadata,
+        getDownloadURL,
+        getDatabase,
+        dbRef,
+        dbSet,
+        dbUpdate,
+        child,
+        get,
+        onValue,
+        push }
+}
+
+export const useAllCases = () => {
+    const { dbRef, onValue, getDatabase } = useFirebase()
+    const [ allCases, setAllCases ] = useState({})
+    const [ loading, setLoading ] = useState(true)
+    const [ error, setError ] = useState(null)
+
+    const getAllCases = () => {
+        const db = getDatabase();
+        const casesRef = dbRef(db, 'cases/');
+        onValue(casesRef, (snapshot) => {
+            setAllCases(snapshot.val());
+            setLoading(false)
+        });
+    }
+
+    useEffect(() => {
+        getAllCases();
+    }, []);
+
+    return { allCases, loading, error }
+}
+
+export const saveNewUseCase = ( saveContact:Contact, saveUseCase: UseCase, setContact:Function, setUseCase:Function ) => {
+    console.log("saveNewUseCase")
+    console.log(saveContact)
+    console.log(saveUseCase)
+    const db = getDatabase()
+
+    // Generate new ID for new use case and new user
+    const newCaseKey = push(child(dbRef(db), 'cases')).key;
+    const newUserKey = push(child(dbRef(db), 'users')).key;
+    dbSet(dbRef(db,'cases/' + newCaseKey ), {
+        id: newCaseKey,
+        caseName: saveUseCase.caseName,
+        owner: newUserKey,
+        status: "New"
+    })
+        .then(() => {
+            setUseCase({
+                id: newCaseKey,
+                caseName: saveUseCase.caseName,
+                owner: newUserKey
+            })
+        })
+    // Same for users!!!!
+    dbSet(dbRef(db,'users/' + newUserKey), {
+        id: newUserKey,
+        firstName: saveContact.firstName,
+        lastName: saveContact.lastName,
+        company: saveContact.company,
+        title: saveContact.title,
+        email: saveContact.email
+    })
+        .then(() => {
+            setContact({
+                id: newUserKey,
+                firstName: saveContact.firstName,
+                lastName: saveContact.lastName,
+                company: saveContact.company,
+                title: saveContact.title,
+                email: saveContact.email
+            })
+        })
+}
+
+export const updateUseCase = ( saveContact:Contact, saveUseCase: UseCase, setContact:Function, setUseCase:Function ) => {
+    const db = getDatabase()
+    console.log("updateUseCase")
+    console.log(saveContact)
+    console.log(saveUseCase)
+
+    // Use existing ID to update case and contact
+    const newCaseKey = saveUseCase.id;
+    const newUserKey = saveContact.id;
+    dbUpdate(dbRef(db,'cases/' + newCaseKey ), {
+        id: newCaseKey,
+        caseName: saveUseCase.caseName,
+        owner: newUserKey,
+    })
+        .then(() => {
+            setUseCase({
+                id: newCaseKey,
+                caseName: saveUseCase.caseName,
+                owner: newUserKey
+            })
+        })
+    // Same for users!!!!
+    dbUpdate(dbRef(db,'users/' + newUserKey), {
+        id: newUserKey,
+        firstName: saveContact.firstName,
+        lastName: saveContact.lastName,
+        company: saveContact.company,
+        title: saveContact.title,
+        email: saveContact.email
+    })
+        .then(() => {
+            setContact({
+                id: newUserKey,
+                firstName: saveContact.firstName,
+                lastName: saveContact.lastName,
+                company: saveContact.company,
+                title: saveContact.title,
+                email: saveContact.email
+            })
+        })
 }
 
 export const useFakeTypes = () => {
@@ -159,27 +278,24 @@ export const useDeliveryPickup = () => {
         return markAvailableLocations(response);
     };
 
-    const response = useLazyFetch<AvailablePickupLocation[]>(deliveryPickup);
+    const response = useLazyFetch<any>(deliveryPickup);
 
     return response;
 };
 
-export const useDeliveryDoorstep = () => {
-    const { pilotId, country } = useConfig();
+/*
+export const useFirebaseUseCases = () => {
     const { api } = useApi();
 
-    const deliveryDoorstep = async (payload: {
-        zipCode?: string;
-        timeEntryId?: number;
-    }) => {
-        const response = await api!.deliveryDoorstepPost({
-            doorstepPayload: { ...payload, pilotId, country },
-        });
-        return markAvailableLocations(response);
+    const firebaseUseCases = async () => {
+        const response = await api!.useCaseListener();
+        return response;
     };
 
-    return useLazyFetch<AvailableDoorstepDeliveryLocation[]>(deliveryDoorstep);
+    return useLazyFetch<any>(firebaseUseCases);
 };
+
+ */
 
 export const useAsyncDeliveryDoorstep = () => {
     const { pilotId, country } = useConfig();

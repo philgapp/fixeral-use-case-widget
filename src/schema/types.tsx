@@ -123,15 +123,27 @@ for (const [key, value] of Object.entries(DELIVERY_TYPE_LABELS)) {
 
 export type NewUseCase = boolean | null;
 
-export type UseCase = string | null;
+export type UseCase = {
+    id?: string | null,
+    caseName: string,
+    owner?: string | null,
+    partDrawing?: string | null,
+    partModel?: string | null,
+    partFiles?: Array<string>  | null,
+    caseNotes?: string | null,
+    status?: string | null,
+    stakeholders?: Array<string> | null
+};
+
+export type AllUseCases = Array<UseCase>
 
 export type UploadProgress = string | null;
 
 export type Contact = {
-    caseid: string,
-    id: string,
-    firstname: string,
-    lastname: string,
+    id?: string | null,
+    caseId?: string,
+    firstName: string,
+    lastName: string,
     company: string,
     title: string,
     email: string
@@ -168,6 +180,7 @@ export type Size = string;
 export type pilotId = string;
 
 export interface Store {
+    allUseCases: any;
     newUseCase: NewUseCase | null;
     uploadProgress: UploadProgress | null;
     useCase: UseCase | null;

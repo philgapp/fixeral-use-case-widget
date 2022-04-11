@@ -2,78 +2,93 @@ import {FC, useCallback, useEffect, useState} from "react";
 import {
     DeliveryType,
     PickupLocation,
-    DoorstepDeliveryLocation, Contact, UseCase,
+    DoorstepDeliveryLocation,
+    Contact,
+    UseCase,
 } from "@schema/types";
+import { DELIVERY_TYPE_LABELS } from "@constants/index";
 import { useUI } from "@context/ui";
+import { useStore } from "@context/store";
 import TimeEntryPicker from "../TimeEntryPicker";
 import HavingTroubles from "./HavingTroubles";
 import { Button, ErrorBox, Modal, Steps, Input } from "@components/ui";
 import { formatDate, formatPriceRange } from "@utils/index";
-import { useFakeTypes, useFirebase } from "@hooks/api";
+import { useFakeTypes, useFirebase, saveNewUseCase, updateUseCase } from "@hooks/api";
 import { Check, Pencil } from "@components/icons";
-import { useStore } from "@context/store";
-import { DELIVERY_TYPE_LABELS } from "@constants/index";
-import {forEach} from "@react-google-maps/api/dist/utils/foreach";
 
 interface Props {
     initialized?: boolean;
+    allCases: object;
+    loading: boolean;
+    error: any;
 }
 
 const { Step } = Steps;
 
-const Step1: FC = () => {
-    const { contact, setContact, setUseCase } = useStore();
-
+const Step1: FC<Props> = ({allCases, loading, error}) => {
+    const { contact, setContact, useCase, setUseCase } = useStore();
     const { nextStep } = useUI();
-
-    const firebaseContact = ( contact:Contact ) => {
-        const { getDatabase, dbRef, dbSet } = useFirebase()
-        const db = getDatabase()
-        dbSet(dbRef(db,'cases/' + contact.caseid), {
-            caseid: contact.caseid,
-            owner: contact.firstname + contact.lastname
-        })
-        dbSet(dbRef(db,'users/' + contact.id), {
-            id: contact.id,
-            firstname: contact.firstname,
-            lastname: contact.lastname,
-            company: contact.company,
-            title: contact.title,
-            email: contact.email
-        })
-    }
 
     const handleClick = () => {
 
-        const caseid = (document.getElementById("caseid") as HTMLFormElement).value
-        const firstname = (document.getElementById("first-name") as HTMLFormElement).value
-        const lastname = (document.getElementById("last-name") as HTMLFormElement).value
+        const caseName = (document.getElementById("caseName") as HTMLFormElement).value
+        const firstName = (document.getElementById("firstName") as HTMLFormElement).value
+        const lastName = (document.getElementById("lastName") as HTMLFormElement).value
         const company = (document.getElementById("company") as HTMLFormElement).value
         const title = (document.getElementById("title") as HTMLFormElement).value
         const email = (document.getElementById("email") as HTMLFormElement).value
 
-        const contact: Contact = {
-            caseid: caseid,
-            id: firstname + lastname,
-            firstname: firstname,
-            lastname: lastname,
+        // First check unique Case Name/ID
+        if(allCases) {
+            for (const caseObject in allCases) {
+                if(caseObject === caseName) {
+                    console.error("Use Case name already in use, please use a unique name.")
+                    return
+                }
+            }
+        }
+
+        const newContact: Contact = {
+            firstName: firstName,
+            lastName: lastName,
             company: company,
             title: title,
             email: email
         }
-        console.log(contact)
-        setContact(contact);
-        setUseCase(caseid)
-        if(contact.email) firebaseContact(contact)
 
+        if(useCase) {
+            if(useCase.id) {
+                if(contact) {
+                    newContact.id = contact.id
+                    useCase.caseName = caseName
+                    updateUseCase(newContact, useCase, setContact, setUseCase)
+                    return
+                }
+            }
+        }
+
+        setContact(newContact);
+        setUseCase({
+            caseName: caseName
+        })
+
+        if(!newContact.email) {
+            console.error("Email is required.")
+            return
+        }
+
+        console.log("handleClick right before saveNewUseCase")
+        saveNewUseCase(newContact, {
+            caseName: caseName
+        }, setContact, setUseCase)
         setTimeout(nextStep);
     };
 
     return (
         <div>
-            <Input id="caseid" required={true} label="Use Case Name" value={contact ? contact.caseid : ""}/>
-            <Input id="first-name" required={true} label="First Name" value={contact ? contact.firstname : ""}/>
-            <Input id="last-name" required={true} label="Last Name" value={contact ? contact.lastname : ""}/>
+            <Input id="caseName" required={true} label="Use Case Name" value={useCase ? useCase.caseName : ""}/>
+            <Input id="firstName" required={true} label="First Name" value={contact ? contact.firstName : ""}/>
+            <Input id="lastName" required={true} label="Last Name" value={contact ? contact.lastName : ""}/>
             <Input id="company" label="Company" value={contact ? contact.company : ""}/>
             <Input id="title" label="Title" value={contact ? contact.title : ""}/>
             <Input id="email" required={true} label="Email" value={contact ? contact.email : ""}/>
@@ -107,26 +122,43 @@ const Step1: FC = () => {
     );
 };
 
-const Step2: FC<Props> = ({ initialized }) => {
+const Step2: FC<Props> = ({ initialized, allCases, loading, error }) => {
     const { nextStep } = useUI();
-    const { location, uploadProgress, setUploadProgress, useCase } = useStore();
-    const { partModels, ref, uploadBytesResumable, getMetadata } = useFirebase();
+    const { location, uploadProgress, setUploadProgress, useCase, contact } = useStore();
+    const { useCaseFiles, ref, uploadBytesResumable, getMetadata, getDatabase, dbRef, dbUpdate, push, child } = useFirebase();
 
-    const firebaseUpdateCase = ( requirements: any ) => {
-        const { getDatabase, dbRef, dbUpdate } = useFirebase()
+    const updateUseCase = ( file:any, tag:any, partFilesIndex?:any ) => {
         const db = getDatabase()
-        dbUpdate(dbRef(db,'cases/' + requirements.caseid), {
-            partdrawing: requirements.partdrawing,
-            partmodel: requirements.partmodel,
-            partfiles: requirements.partfiles,
-            casenotes: requirements.casenotes
-        })
-    }
-
-    const firebaseUpload = ( useCase:UseCase, file: any ) => {
 
         if(!useCase) {
-            console.error("useCase required for firebaseUpload. " + useCase + " is not a recognized useCase.")
+            console.error("useCase required to updateUseCase")
+            return null
+        }
+
+        const dbPath = (tag !== "partFiles"
+            ? 'cases/' + useCase.id + '/files/' + tag
+            : 'cases/' + useCase.id + '/files/' + tag + '-' + partFilesIndex)
+
+        const newKey = push(child(dbRef(db), dbPath)).key;
+
+        dbUpdate(dbRef(db, dbPath), {
+            "id": newKey,
+            "path": file,
+        })
+            .then(() => {
+            // Data saved successfully!
+            console.log(file + " uploaded and saved to case " + useCase.id)
+        })
+            .catch((error) => {
+                // The write failed...
+                console.error("updateUseCase failed with " + error)
+            });
+    }
+
+    const firebaseUpload = ( useCase:UseCase, useCaseKey: any, file: any, partFilesIndex?: any ) => {
+
+        if(!useCase.caseName) {
+            console.error("useCase required for firebaseUpload. " + useCase.caseName + " is not a recognized useCase.")
             return
         }
 
@@ -136,11 +168,11 @@ const Step2: FC<Props> = ({ initialized }) => {
             contentType: file.type
         };
 
-// Upload file and metadata to the object 'images/mountains.jpg'
-        const storageRef = ref(partModels, '/' + file.name);
+        // Upload file and metadata to the object 'images/mountains.jpg'
+        const storageRef = ref(useCaseFiles, '/' + useCase.id + '/' + file.name);
         const uploadTask = uploadBytesResumable(storageRef, file, metadata);
 
-// Listen for state changes, errors, and completion of the upload.
+        // Listen for state changes, errors, and completion of the upload.
         uploadTask.on('state_changed',
             (snapshot) => {
                 // Get task progress, including the number of bytes uploaded and the total number of bytes to be uploaded
@@ -176,9 +208,7 @@ const Step2: FC<Props> = ({ initialized }) => {
                 // Upload completed successfully, now we can get the download URL
                 getMetadata(uploadTask.snapshot.ref).then((metadata) => {
                     setUploadProgress(null)
-                    // TODO instead of logging, write to DB under case
-                    console.log(useCase)
-                    console.log(metadata.fullPath)
+                    updateUseCase(metadata.fullPath,useCaseKey,partFilesIndex)
                 });
 
             }
@@ -187,12 +217,26 @@ const Step2: FC<Props> = ({ initialized }) => {
 
     const handleClick = () => {
         const formData:any = {}
+
+        // Must have useCase.id in order to upload files to a use case
+        if(!useCase) {
+            console.error("useCase required for uploading files")
+            return null
+        }
+        if(useCase) {
+            if(!useCase.id) {
+                console.error("useCase.id required for uploading files")
+                return null
+            }
+        }
+
         // File upload elements from the input id parameter
         const uploadElements = [
-            "part-drawing",
-            "part-model",
-            "part-files"
+            "partDrawing",
+            "partModel",
+            "partFiles"
         ]
+
         // If any uploadElement exists and is not empty, add the input element to formData object
         uploadElements.forEach( uploadElement => {
             if(document.getElementById( uploadElement )) {
@@ -206,24 +250,26 @@ const Step2: FC<Props> = ({ initialized }) => {
         for (const data in formData) {
             // Multiple file upload from single input:
             if(formData[data].files.length > 1) {
-                Array.from(formData[data].files).forEach( (file:any) => {
-                    firebaseUpload(useCase, file)
+                Array.from(formData[data].files).forEach( ( file:any, i ) => {
+                    firebaseUpload(useCase, data, file, i)
                 });
             // Or single file upload
             } else {
-                firebaseUpload(useCase, formData[data].files[0])
+                firebaseUpload(useCase, data, formData[data].files[0])
             }
         }
 
-        // After files are uploaded add notes from input and caseid from state to formData
-        formData["case-notes"] = (document.getElementById("case-notes") as HTMLFormElement)
-        formData["caseid"] = useCase
+        // After files are uploaded add notes from input and useCase.id from state to formData
+        if((document.getElementById("caseNotes") as HTMLFormElement).value) {
+            formData["caseNotes"] = (document.getElementById("caseNotes") as HTMLFormElement).value
+        }
+        formData["id"] = useCase.id
 
         console.log(formData)
 
         // Write file URLs (or DB path??) to DB with useCase (ID)
         // Write casenotes to DB
-        // firebaseUpdateCase(formData)
+        // updateUseCase(formData)
 
         setTimeout(nextStep());
 
@@ -234,10 +280,10 @@ const Step2: FC<Props> = ({ initialized }) => {
             {uploadProgress && (
                 <>{uploadProgress}</>
             )}
-            <Input id="part-drawing" className={"useCaseUploadLabel"} type="file" label="Main Drawing (Recent and Accurate)" />
-            <Input id="part-model" className={"useCaseUploadLabel"} type="file" label="Main Model (STEP preferred)" />
-            <Input id="part-files" className={"useCaseUploadLabel"} type="file" multiple={true} label="Other Images, Documents, etc." />
-            <Input id="case-notes" className={"useCaseUploadLabel"} type="textarea" label="Notes" placeholder="Please provide all specific requirements, expertise, and other information important to this use case." />
+            <Input id="partDrawing" className={"useCaseUploadLabel"} type="file" label="Main Drawing (Recent and Accurate)" />
+            <Input id="partModel" className={"useCaseUploadLabel"} type="file" label="Main Model (STEP preferred)" />
+            <Input id="partFiles" className={"useCaseUploadLabel"} type="file" multiple={true} label="Other Images, Documents, etc." />
+            <Input id="caseNotes" className={"useCaseUploadLabel"} type="textarea" label="Notes" placeholder="Please provide all specific requirements, expertise, and other information important to this use case." />
             <Button
                 className="button-no-round"
                 onClick={handleClick}
@@ -273,19 +319,16 @@ const STEPS = [
     },
 ];
 
-const Form: FC<Props> = ({ initialized }) => {
+const Form: FC<Props> = ({ initialized , allCases, loading, error}) => {
     const { currentStep, setStep } = useUI();
-    const { setNewUseCase } = useStore()
-
     const {
         contact,
         timeEntry,
         location,
         type,
         reset,
+        setNewUseCase
     } = useStore();
-
-    const { loading, error } = useFakeTypes();
 
     const getFormattedDate = () => {
         const { startTime, endTime, date } = timeEntry!;
@@ -386,7 +429,7 @@ const Form: FC<Props> = ({ initialized }) => {
     return (
         <>
             <Button onClick={() => setNewUseCase(false)} >Back</Button>
-            {loading ? (
+            { loading ? (
                 <div className="w-full h-full py-5 space-y-4 opacity-40">
                     <div className="animate-pulse flex space-x-6">
                         <div className="rounded-full bg-decent h-8 w-8"></div>
@@ -429,7 +472,7 @@ const Form: FC<Props> = ({ initialized }) => {
                                 title={getTitle(index, defaultTitle)}
                                 description={
                                     currentStep === index && (
-                                        <Content initialized={initialized} />
+                                        <Content initialized={initialized} allCases={allCases} loading={loading} error={error} />
                                     )
                                 }
                             ></Step>

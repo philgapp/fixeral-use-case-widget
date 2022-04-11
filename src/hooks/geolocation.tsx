@@ -7,9 +7,9 @@ export const useGeolocation = () => {
 
     const [coords, setCoords] = useState<GeolocationPosition["coords"]>();
 
-    const handleSuccess = (positoin: GeolocationPosition) => {
+    const handleSuccess = (position: GeolocationPosition) => {
         if (isSubscribed.current) {
-            setCoords(positoin.coords);
+            setCoords(position.coords);
         }
     };
 

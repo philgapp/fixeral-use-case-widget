@@ -1,4 +1,5 @@
 import { CURRENCY, LOCALE } from "@constants/index";
+import { AllUseCases } from "@schema/types"
 
 export const formatDate = (date: Date) => {
     return date.toLocaleDateString(LOCALE);
