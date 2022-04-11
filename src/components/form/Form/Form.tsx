@@ -13,7 +13,7 @@ import TimeEntryPicker from "../TimeEntryPicker";
 import HavingTroubles from "./HavingTroubles";
 import { Button, ErrorBox, Modal, Steps, Input } from "@components/ui";
 import { formatDate, formatPriceRange } from "@utils/index";
-import { useFakeTypes, useFirebase, saveNewUseCase, updateUseCase } from "@hooks/api";
+import {useFakeTypes, useFirebase, saveNewUseCase, updateUseCase, updateUseCaseDetail} from "@hooks/api";
 import { Check, Pencil } from "@components/icons";
 
 interface Props {
@@ -77,7 +77,6 @@ const Step1: FC<Props> = ({allCases, loading, error}) => {
             return
         }
 
-        console.log("handleClick right before saveNewUseCase")
         saveNewUseCase(newContact, {
             caseName: caseName
         }, setContact, setUseCase)
@@ -99,35 +98,16 @@ const Step1: FC<Props> = ({allCases, loading, error}) => {
             >
                 Save Use Case and Contact
             </Button>
-
-            {/*availableDeliveryTypes.map(
-                ({ minPrice, maxPrice, ...deliveryType }) => {
-                    return (
-                        <Button
-                            className="button-no-round float-left mr-2 mb-2"
-                            active={deliveryType.type === type}
-                            key={deliveryType.type}
-                            onClick={handleClick.bind(this, deliveryType.type)}
-                        >
-                            {`${
-                                DELIVERY_TYPE_LABELS[deliveryType.type]
-                            } (${formatPriceRange(minPrice, maxPrice)})`}
-                        </Button>
-                    );
-                }
-            )
-            */}
-
         </div>
     );
 };
 
 const Step2: FC<Props> = ({ initialized, allCases, loading, error }) => {
     const { nextStep } = useUI();
-    const { location, uploadProgress, setUploadProgress, useCase, contact } = useStore();
+    const { location, uploadProgress, setUploadProgress, useCase, contact, setUseCase, setNewUseCase } = useStore();
     const { useCaseFiles, ref, uploadBytesResumable, getMetadata, getDatabase, dbRef, dbUpdate, push, child } = useFirebase();
 
-    const updateUseCase = ( file:any, tag:any, partFilesIndex?:any ) => {
+    const updateUseCaseFiles = ( file:any, tag:any, partFilesIndex?:any ) => {
         const db = getDatabase()
 
         if(!useCase) {
@@ -137,13 +117,14 @@ const Step2: FC<Props> = ({ initialized, allCases, loading, error }) => {
 
         const dbPath = (tag !== "partFiles"
             ? 'cases/' + useCase.id + '/files/' + tag
-            : 'cases/' + useCase.id + '/files/' + tag + '-' + partFilesIndex)
+            : 'cases/' + useCase.id + '/files/' + tag + '/' + partFilesIndex)
 
         const newKey = push(child(dbRef(db), dbPath)).key;
 
         dbUpdate(dbRef(db, dbPath), {
             "id": newKey,
             "path": file,
+            // TODO actual download link for dashboard
         })
             .then(() => {
             // Data saved successfully!
@@ -206,10 +187,11 @@ const Step2: FC<Props> = ({ initialized, allCases, loading, error }) => {
             },
             () => {
                 // Upload completed successfully, now we can get the download URL
-                getMetadata(uploadTask.snapshot.ref).then((metadata) => {
-                    setUploadProgress(null)
-                    updateUseCase(metadata.fullPath,useCaseKey,partFilesIndex)
-                });
+                getMetadata( uploadTask.snapshot.ref )
+                    .then(( metadata) => {
+                        setUploadProgress(null)
+                        updateUseCaseFiles( metadata.fullPath, useCaseKey, partFilesIndex )
+                    });
 
             }
         );
@@ -267,11 +249,12 @@ const Step2: FC<Props> = ({ initialized, allCases, loading, error }) => {
 
         console.log(formData)
 
-        // Write file URLs (or DB path??) to DB with useCase (ID)
         // Write casenotes to DB
-        // updateUseCase(formData)
+        updateUseCaseDetail( useCase, formData, setUseCase )
 
-        setTimeout(nextStep());
+        setNewUseCase(false)
+
+        //setTimeout(nextStep());
 
     }
 
@@ -283,7 +266,7 @@ const Step2: FC<Props> = ({ initialized, allCases, loading, error }) => {
             <Input id="partDrawing" className={"useCaseUploadLabel"} type="file" label="Main Drawing (Recent and Accurate)" />
             <Input id="partModel" className={"useCaseUploadLabel"} type="file" label="Main Model (STEP preferred)" />
             <Input id="partFiles" className={"useCaseUploadLabel"} type="file" multiple={true} label="Other Images, Documents, etc." />
-            <Input id="caseNotes" className={"useCaseUploadLabel"} type="textarea" label="Notes" placeholder="Please provide all specific requirements, expertise, and other information important to this use case." />
+            <Input id="caseNotes" className={"useCaseUploadLabel"} type="textarea" label="Notes" placeholder={(useCase && useCase.caseNotes) ? useCase.caseNotes.toString() : "Please provide all specific requirements, expertise, and other information important to this use case."} />
             <Button
                 className="button-no-round"
                 onClick={handleClick}

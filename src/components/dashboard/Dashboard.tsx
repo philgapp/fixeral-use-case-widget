@@ -1,5 +1,6 @@
 import { FC } from "react";
 import {
+    AllUseCases,
     Contact,
     UseCase,
 } from "@schema/types";
@@ -24,37 +25,36 @@ const UseCaseDash: FC<Props> = ({ allCases }) => {
     // Must have an owner!
     if(!contact) return null
 
-    if(typeof useCase === 'string'
-        && typeof allCases === 'object') {
-
-    }
-    // @ts-ignore
     return (
         <>
-            <h2>{useCase.caseName}</h2> {useCase.id}
-            <p>{contact.firstName} {contact.lastName}
-                <br/>
-                {contact.company} {contact.title}
+            <h2><b>Name:</b> {useCase.caseName}</h2> ID: {useCase.id}
+            <p><b>Owner:</b> {contact.firstName} {contact.lastName}
+                <br/>Company: {contact.company}
+                <br/>Title: {contact.title}
             </p>
-            <p>{useCase.status}</p>
-            <p>{useCase.stakeholders}</p>
-            <p>{useCase.partDrawing}</p>
-            <p>{useCase.partModel}</p>
-            <p>{useCase.partFiles}</p>
-            <p>{useCase.caseNotes}</p>
-            <p>{useCase}</p>
+            <p><b>Status:</b> {useCase.status}</p>
+            <p><b>Stakeholders:</b> {useCase.stakeholders}</p>
+            {useCase.files && useCase.files.partDrawing && (
+                <p><b>Primary Drawing:</b> {useCase.files.partDrawing.path}</p>
+            )}
+            {useCase.files && useCase.files.partModel && (
+                <p><b>Primary Model:</b> {useCase.files.partModel.path}</p>
+            )}
+            {useCase.files && useCase.files.partFiles && (
+                <p><b>Other case files:</b> {useCase.files.partFiles.map( (caseFile) => {
+                    return caseFile.path + <br/>
+                })}</p>
+            )}
+            <p><b>Notes:</b> {useCase.caseNotes}</p>
         </>
         )
 }
 
 // @ts-ignore
 const Dashboard: FC<Props> = ({initialized,allCases, loading, error}) => {
-    const { currentStep, setStep } = useUI();
-
     const {
         contact,
         useCase,
-        reset,
         setNewUseCase,
         setUseCase,
         setContact
@@ -70,7 +70,6 @@ const Dashboard: FC<Props> = ({initialized,allCases, loading, error}) => {
         get(child(ref, `users/${id}`))
             .then((snapshot) => {
                 if (snapshot.exists()) {
-                    console.log(snapshot.val());
                     setContact(snapshot.val())
                 } else {
                     console.log("No user found");
@@ -82,61 +81,28 @@ const Dashboard: FC<Props> = ({initialized,allCases, loading, error}) => {
 
     const checkUseCase = ( e:any ) => {
         const useCaseInput = e.target.value
-        let filteredCases:object = {}
 
         const objectFilter = (obj:{}, predicate:any) =>
             Object.fromEntries(Object.entries(obj).filter(predicate));
 
         if(allCases) {
+            interface filtered { [fieldName: string]: any }
             // @ts-ignore
-            filteredCases = objectFilter(allCases, ([useCaseId, useCaseData]) => useCaseId === useCaseInput)
-        }
-        if(filteredCases // 👈 null and undefined check
-            && Object.keys(filteredCases).length > 0
-            && Object.getPrototypeOf(filteredCases) === Object.prototype) {
-            console.log(filteredCases)
-        }
-        // Get list of useCases from DB
-        // Filter against supplied value
-        // Return status for UI
-        // @ts-ignore
-        if(filteredCases[useCaseInput]) {
-            // @ts-ignore
-            setUseCase(allCases[useCaseInput])
-            // @ts-ignore
-            getContact(allCases[useCaseInput].owner)
-        }
-    }
+            const filteredCases:filtered = objectFilter(allCases, ([useCaseId]) => useCaseId === useCaseInput)
 
-    const handleEdit = () => {
-        if (initialized) {
-            reset();
-            setStep(0);
+            if(filteredCases // 👈 null and undefined check
+                && Object.keys(filteredCases).length > 0
+                && Object.getPrototypeOf(filteredCases) === Object.prototype) {
+                if(filteredCases[useCaseInput]) {
+                    setUseCase(allCases[useCaseInput as keyof typeof allCases])
+                    // @ts-ignore
+                    getContact(allCases[useCaseInput].owner)
+                    setNewUseCase(false)
+                }
+            }
         } else {
-            setStep(2);
+            console.error("Without allCases cannot checkUseCase.")
         }
-    };
-
-    if (error) {
-        return <ErrorBox />;
-    }
-
-    if (currentStep > 2) {
-        return (
-            <div className="relative my-5 flex items-center">
-                <div className="mr-5 flex-shrink-0 w-8 h-8 border border-black items-center flex justify-center rounded-full">
-                    <Check />
-                </div>
-                <div>
-                    <Button
-                        className="absolute bg-primary right-2 top-0 rounded-full p-2"
-                        onClick={handleEdit}
-                    >
-                        <Pencil className="w-4 h-4" />
-                    </Button>
-                </div>
-            </div>
-        );
     }
 
     return (
@@ -147,7 +113,7 @@ const Dashboard: FC<Props> = ({initialized,allCases, loading, error}) => {
                     <br/>
                     or
                     <br/>
-                    <Input type="text" placeholder="Enter Use Case Name/ID" onChange={checkUseCase}/>
+                    <Input type="text" placeholder="Enter Use Case ID" onChange={(e) => checkUseCase(e)}/>
                     {useCase && (
                         <UseCaseDash allCases={allCases} loading={loading} error={error} />
                     )}

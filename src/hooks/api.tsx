@@ -116,9 +116,6 @@ export const useAllCases = () => {
 }
 
 export const saveNewUseCase = ( saveContact:Contact, saveUseCase: UseCase, setContact:Function, setUseCase:Function ) => {
-    console.log("saveNewUseCase")
-    console.log(saveContact)
-    console.log(saveUseCase)
     const db = getDatabase()
 
     // Generate new ID for new use case and new user
@@ -160,9 +157,6 @@ export const saveNewUseCase = ( saveContact:Contact, saveUseCase: UseCase, setCo
 
 export const updateUseCase = ( saveContact:Contact, saveUseCase: UseCase, setContact:Function, setUseCase:Function ) => {
     const db = getDatabase()
-    console.log("updateUseCase")
-    console.log(saveContact)
-    console.log(saveUseCase)
 
     // Use existing ID to update case and contact
     const newCaseKey = saveUseCase.id;
@@ -173,11 +167,7 @@ export const updateUseCase = ( saveContact:Contact, saveUseCase: UseCase, setCon
         owner: newUserKey,
     })
         .then(() => {
-            setUseCase({
-                id: newCaseKey,
-                caseName: saveUseCase.caseName,
-                owner: newUserKey
-            })
+            setUseCase(saveUseCase)
         })
     // Same for users!!!!
     dbUpdate(dbRef(db,'users/' + newUserKey), {
@@ -189,14 +179,25 @@ export const updateUseCase = ( saveContact:Contact, saveUseCase: UseCase, setCon
         email: saveContact.email
     })
         .then(() => {
-            setContact({
-                id: newUserKey,
-                firstName: saveContact.firstName,
-                lastName: saveContact.lastName,
-                company: saveContact.company,
-                title: saveContact.title,
-                email: saveContact.email
-            })
+            setContact(saveContact)
+        })
+}
+
+// TODO make this function handle all basic use case updates
+// Testing only with caseNotes for now
+export const updateUseCaseDetail = ( originalUseCase: UseCase, saveUseCase: UseCase, setUseCase:Function ) => {
+    const db = getDatabase()
+
+    // TODO resolve this workaround to update current use case
+    originalUseCase.caseNotes = saveUseCase.caseNotes
+
+    // Use existing ID to update case and contact
+    const newCaseKey = saveUseCase.id;
+    dbUpdate(dbRef(db,'cases/' + newCaseKey ), {
+        caseNotes: saveUseCase.caseNotes
+    })
+        .then(() => {
+            setUseCase( originalUseCase )
         })
 }
 

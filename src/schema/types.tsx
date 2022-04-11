@@ -123,13 +123,21 @@ for (const [key, value] of Object.entries(DELIVERY_TYPE_LABELS)) {
 
 export type NewUseCase = boolean | null;
 
+export type UseCaseFile = {
+    id?: string,
+    path: string,
+    // TODO download path
+}
+
 export type UseCase = {
     id?: string | null,
     caseName: string,
     owner?: string | null,
-    partDrawing?: string | null,
-    partModel?: string | null,
-    partFiles?: Array<string>  | null,
+    files?: {
+        partDrawing?: UseCaseFile,
+        partModel?: UseCaseFile,
+        partFiles?: Array<UseCaseFile>,
+    }
     caseNotes?: string | null,
     status?: string | null,
     stakeholders?: Array<string> | null
